@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: preppilot-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/preppilot
+    username: postgres
+    password: Dha@2023
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080

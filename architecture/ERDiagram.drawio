@@ -1,0 +1,79 @@
+Users
+------
+id
+email
+password
+status
+created_at
+
+    |
+    | 1 : N
+    |
+
+Documents
+---------
+id
+user_id
+file_name
+file_type
+
+    |
+    | 1 : N
+    |
+
+Document Chunks
+---------------
+id
+document_id
+chunk_text
+
+    |
+    | 1 : 1
+    |
+
+Document Embeddings
+-------------------
+id
+chunk_id
+vector
+
+Users
+   |
+   | 1 : N
+   |
+
+Chat Sessions
+-------------
+id
+user_id
+
+   |
+   | 1 : N
+   |
+
+Chat Messages
+-------------
+id
+session_id
+message
+
+Users
+   |
+   | 1 : N
+   |
+
+Quiz Attempts
+
+Users
+   |
+   | 1 : 1
+   |
+
+Analytics
+
+Users
+   |
+   | 1 : N
+   |
+
+Audit Logs
