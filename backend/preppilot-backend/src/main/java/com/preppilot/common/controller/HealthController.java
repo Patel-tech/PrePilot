@@ -1,5 +1,7 @@
 package com.preppilot.common.controller;
 
+import com.preppilot.common.response.ApiResponse;
+import com.preppilot.common.response.ResponseBuilder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -12,7 +14,11 @@ public class HealthController {
     }
 
     @GetMapping("/health")
-    public String health() {
-        return "OK";
+    public ApiResponse<String> health(){
+
+        return ResponseBuilder.success(
+                "Application is running",
+                "UP"
+        );
     }
 }
