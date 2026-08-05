@@ -1,45 +1,89 @@
 package com.preppilot.authentication.config;
 
+import com.preppilot.authentication.security.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.AuthenticationManager;
+
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
+    private final CustomUserDetailsService customUserDetailsService;
 
-        return new BCryptPasswordEncoder();
+    public SecurityConfig(
+            CustomUserDetailsService customUserDetailsService) {
 
+        this.customUserDetailsService = customUserDetailsService;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+    PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+
+        provider.setUserDetailsService(customUserDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+
+        return provider;
+    }
+
+    @Bean
+    AuthenticationManager authenticationManager(
+            AuthenticationConfiguration configuration)
+            throws Exception {
+
+        return configuration.getAuthenticationManager();
+    }
+
+    @Bean
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http)
             throws Exception {
 
         http
-                .csrf(csrf -> csrf.disable())
 
-                .authorizeHttpRequests(auth -> auth
+                .csrf(AbstractHttpConfigurer::disable)
 
-                        .requestMatchers(
-                                "/api/v1/auth/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/actuator/health"
-                        ).permitAll()
+                .sessionManagement(session ->
 
-                        .anyRequest().authenticated())
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS))
 
-                .httpBasic(Customizer.withDefaults());
+                .authorizeHttpRequests(auth ->
+
+                        auth
+
+                                .requestMatchers(
+                                        "/api/v1/auth/**",
+                                        "/swagger-ui/**",
+                                        "/v3/api-docs/**")
+
+                                .permitAll()
+
+                                .anyRequest()
+
+                                .authenticated())
+
+                .authenticationProvider(
+                        authenticationProvider());
 
         return http.build();
-
     }
 
 }
