@@ -41,3 +41,10 @@ logging:
     com.preppilot: DEBUG
   pattern:
     console: "%d %-5level [%thread] %logger : %msg%n"
+
+
+jwt:
+  secret: ${JWT_SECRET}
+  issuer: PrepPilot
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000
