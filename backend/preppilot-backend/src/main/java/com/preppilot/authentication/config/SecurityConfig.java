@@ -1,5 +1,8 @@
 package com.preppilot.authentication.config;
 
+import com.preppilot.authentication.exception.JwtAccessDeniedHandler;
+import com.preppilot.authentication.exception.JwtAuthenticationEntryPoint;
+import com.preppilot.authentication.filter.JwtAuthenticationFilter;
 import com.preppilot.authentication.security.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,17 +17,27 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
 
     private final CustomUserDetailsService customUserDetailsService;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+
+    private final JwtAccessDeniedHandler accessDeniedHandler;
 
     public SecurityConfig(
-            CustomUserDetailsService customUserDetailsService) {
+            CustomUserDetailsService customUserDetailsService, JwtAuthenticationFilter jwtAuthenticationFilter,
+            JwtAuthenticationEntryPoint authenticationEntryPoint, JwtAccessDeniedHandler accessDeniedHandler) {
 
         this.customUserDetailsService = customUserDetailsService;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
+        this.accessDeniedHandler = accessDeniedHandler;
     }
 
     @Bean
@@ -57,31 +70,32 @@ public class SecurityConfig {
             throws Exception {
 
         http
-
                 .csrf(AbstractHttpConfigurer::disable)
 
                 .sessionManagement(session ->
-
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS))
 
+                .exceptionHandling(exception ->
+                        exception
+                                .authenticationEntryPoint(authenticationEntryPoint)
+                                .accessDeniedHandler(accessDeniedHandler))
+
                 .authorizeHttpRequests(auth ->
-
                         auth
-
                                 .requestMatchers(
                                         "/api/v1/auth/**",
                                         "/swagger-ui/**",
                                         "/v3/api-docs/**")
-
                                 .permitAll()
-
                                 .anyRequest()
-
                                 .authenticated())
 
-                .authenticationProvider(
-                        authenticationProvider());
+                .authenticationProvider(authenticationProvider())
+
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
