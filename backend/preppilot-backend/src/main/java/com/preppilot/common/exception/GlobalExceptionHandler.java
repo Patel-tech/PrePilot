@@ -26,4 +26,13 @@ public class GlobalExceptionHandler {
                 .body(ResponseBuilder.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(ResourceAlreadyExistsException.class)
+    public ResponseEntity<ApiResponse<Object>>
+    handleAlreadyExists(ResourceAlreadyExistsException ex){
+
+        return ResponseEntity
+                .badRequest()
+                .body(ResponseBuilder.error(ex.getMessage()));
+    }
+
 }
