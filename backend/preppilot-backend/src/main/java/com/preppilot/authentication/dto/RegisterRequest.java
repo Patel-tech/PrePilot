@@ -2,28 +2,40 @@ package com.preppilot.authentication.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
-@NoArgsConstructor
+@ToString
 public class RegisterRequest {
 
     @NotBlank(message = "First name is required")
+    @Size(min = 2, max = 50)
     private String firstName;
 
     @NotBlank(message = "Last name is required")
+    @Size(min = 2, max = 50)
     private String lastName;
 
-    @Email(message = "Invalid email")
+    @Email(message = "Invalid email format")
     @NotBlank(message = "Email is required")
     private String email;
 
-    @Size(min = 6, message = "Password must contain at least 6 characters")
+    @NotBlank(message = "Password is required")
+    @Size(min = 8, max = 20)
+    @Pattern(
+            regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@#$%^&+=!]).*$",
+            message = "Password must contain uppercase, lowercase, digit and special character"
+    )
     private String password;
 
-    // getters and setters
+    public RegisterRequest() {
+    }
+
+
+
 }

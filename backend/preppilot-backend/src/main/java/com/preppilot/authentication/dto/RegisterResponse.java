@@ -1,17 +1,32 @@
 package com.preppilot.authentication.dto;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter
 @Setter
-@NoArgsConstructor
+@Getter
 public class RegisterResponse {
 
     private Long id;
-    private String fullName;
+    private String firstName;
+    private String lastName;
     private String email;
+    private String message;
 
-    // getters and setters
+    public RegisterResponse() {
+    }
+
+    public RegisterResponse(Long id,
+                            String firstName,
+                            String lastName,
+                            String email,
+                            String message) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.message = message;
+    }
+
+
 }
