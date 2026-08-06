@@ -51,18 +51,13 @@ public class AuthServiceImpl implements AuthService {
                         new ResourceNotFoundException(
                                 "Default role not found"));
 
-        User user=new User();
-
-        user.setFirstName(request.getFirstName());
-
-        user.setLastName(request.getLastName());
-
-        user.setEmail(request.getEmail());
-
-        user.setPassword(
-                passwordEncoder.encode(request.getPassword()));
-
-        user.setEnabled(true);
+        User user = new User(
+                request.getFirstName(),
+                request.getLastName(),
+                request.getEmail(),
+                passwordEncoder.encode(request.getPassword()),
+                true
+        );
 
         user.getRoles().add(role);
 

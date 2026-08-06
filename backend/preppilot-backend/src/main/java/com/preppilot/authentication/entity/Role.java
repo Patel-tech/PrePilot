@@ -1,39 +1,38 @@
 package com.preppilot.authentication.entity;
 
+import com.preppilot.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
-@Table(name = "roles")
-public class Role {
+@Table(
+        name = "roles",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = "name")
+        }
+)
+@Setter
+@Getter
+public class Role extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, length = 30)
     private String name;
 
-    public Role() {
+    @Column(length = 200)
+    private String description;
+
+    protected Role() {
     }
 
-    public Role(Long id, String name) {
-        this.id = id;
+    public Role(String name, String description) {
         this.name = name;
+        this.description = description;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
+    // getters and setters
 }

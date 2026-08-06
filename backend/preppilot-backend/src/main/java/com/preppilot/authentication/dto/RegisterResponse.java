@@ -29,4 +29,7 @@ public class RegisterResponse {
     }
 
 
+    public void setFullName(String s) {
+
+    }
 }

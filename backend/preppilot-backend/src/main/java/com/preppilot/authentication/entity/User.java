@@ -1,60 +1,72 @@
 package com.preppilot.authentication.entity;
 
+import com.preppilot.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-@Getter
-@Setter
 @Entity
-@Table(name = "users")
-public class User {
+@Table(
+        name = "users",
+        indexes = {
+                @Index(name = "idx_user_email", columnList = "email")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = "email")
+        }
+)
+@Setter
+@Getter
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name="first_name", nullable = false)
+    @Column(nullable = false,length = 50)
     private String firstName;
 
-    @Column(name="last_name", nullable = false)
+    @Column(nullable = false,length = 50)
     private String lastName;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false,length = 120)
     private String email;
 
     @Column(nullable = false)
     private String password;
 
-    private Boolean enabled = true;
+    @Column(nullable = false)
+    private boolean enabled = true;
 
-    @CreationTimestamp
-    @Column(name="created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name="updated_at")
-    private LocalDateTime updatedAt;
-
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_roles",
-            joinColumns = @JoinColumn(name="user_id"),
-            inverseJoinColumns = @JoinColumn(name="role_id")
+            joinColumns =
+            @JoinColumn(name = "user_id"),
+
+            inverseJoinColumns =
+            @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
 
-    public User() {
+    protected User() {
     }
 
+    public User(String firstName,
+                String lastName,
+                String email,
+                String password,
+                boolean enabled) {
 
-    public boolean isEnabled() {
-        return  enabled;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+        this.enabled = enabled;
     }
+
+    // getters/setters
 }
