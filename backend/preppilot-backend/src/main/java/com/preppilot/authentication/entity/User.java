@@ -52,6 +52,14 @@ public class User extends BaseEntity {
     )
     private Set<Role> roles = new HashSet<>();
 
+    public void addRole(Role role) {
+        this.roles.add(role);
+    }
+
+    public Set<Role> getRoles() {
+        return roles;
+    }
+
     protected User() {
     }
 
@@ -67,6 +75,8 @@ public class User extends BaseEntity {
         this.password = password;
         this.enabled = enabled;
     }
+
+
 
     // getters/setters
 }
