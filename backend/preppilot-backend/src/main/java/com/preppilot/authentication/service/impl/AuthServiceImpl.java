@@ -4,6 +4,7 @@ import com.preppilot.authentication.dto.RegisterRequest;
 import com.preppilot.authentication.dto.RegisterResponse;
 import com.preppilot.authentication.entity.Role;
 import com.preppilot.authentication.entity.User;
+import com.preppilot.authentication.exception.UserAlreadyExistsException;
 import com.preppilot.authentication.mapper.AuthMapper;
 import com.preppilot.authentication.mapper.UserMapper;
 import com.preppilot.authentication.repository.RoleRepository;
@@ -42,14 +43,19 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public RegisterResponse register(RegisterRequest request) {
 
-        // 1. Check whether email already exists
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw  new ResourceAlreadyExistsException("User already exists with email: "
-                    + request.getEmail());
+        String email = request.getEmail()
+                .trim()
+                .toLowerCase();
+
+        if (userRepository.existsByEmail(email)) {
+            throw new UserAlreadyExistsException(
+                    "User already exists with email: " + email
+            );
         }
 
-        // 2. Convert DTO to Entity
         User user = userMapper.toEntity(request);
+
+        user.setEmail(email);
 
         // 3. Encode password
         String encodedPassword =
