@@ -2,7 +2,7 @@ package com.preppilot.authentication.token;
 
 import java.util.Map;
 
-public interface TokenProvider {
+public interface TokenProvider1 {
 
     /**
      * Generates an access token.

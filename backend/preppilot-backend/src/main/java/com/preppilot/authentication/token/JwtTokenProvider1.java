@@ -15,11 +15,11 @@ import java.util.Date;
 import java.util.Map;
 
 @Component
-public class JwtTokenProvider implements TokenProvider {
+public class JwtTokenProvider1 implements TokenProvider1 {
 
     private final JwtProperties jwtProperties;
 
-    public JwtTokenProvider( JwtProperties jwtProperties) {
+    public JwtTokenProvider1(JwtProperties jwtProperties) {
         this.jwtProperties = jwtProperties;
 
     }
