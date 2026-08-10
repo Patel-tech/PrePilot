@@ -1,30 +1,32 @@
 package com.preppilot.authentication.dto;
 
-
-import lombok.Getter;
-import lombok.Setter;
-
-@Setter
-@Getter
 public class LoginResponse {
 
     private String accessToken;
-    private String refreshToken;
+
     private String tokenType;
-    private Long expiresIn;
 
-    public LoginResponse() {
-    }
+    private String email;
 
-    public LoginResponse(String accessToken,
-                         String refreshToken,
-                         String tokenType,
-                         Long expiresIn) {
+    public LoginResponse(
+            String accessToken,
+            String tokenType,
+            String email) {
+
         this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
         this.tokenType = tokenType;
-        this.expiresIn = expiresIn;
+        this.email = email;
     }
 
+    public String getAccessToken() {
+        return accessToken;
+    }
 
+    public String getTokenType() {
+        return tokenType;
+    }
+
+    public String getEmail() {
+        return email;
+    }
 }

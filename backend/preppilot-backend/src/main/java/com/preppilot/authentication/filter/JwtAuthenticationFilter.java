@@ -1,7 +1,7 @@
 package com.preppilot.authentication.filter;
 
 import com.preppilot.authentication.security.CustomUserDetailsService;
-import com.preppilot.authentication.token.TokenProvider;
+import com.preppilot.authentication.token.TokenProvider1;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,12 +23,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
-    private final TokenProvider tokenProvider;
+    private final TokenProvider1 tokenProvider;
 
     private final CustomUserDetailsService userDetailsService;
 
     public JwtAuthenticationFilter(
-            TokenProvider tokenProvider,
+            TokenProvider1 tokenProvider,
             CustomUserDetailsService userDetailsService) {
 
         this.tokenProvider = tokenProvider;

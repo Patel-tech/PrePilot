@@ -1,5 +1,7 @@
 package com.preppilot.authentication.controller;
 
+import com.preppilot.authentication.dto.LoginRequest;
+import com.preppilot.authentication.dto.LoginResponse;
 import com.preppilot.authentication.dto.RegisterRequest;
 import com.preppilot.authentication.dto.RegisterResponse;
 import com.preppilot.authentication.service.AuthService;
@@ -28,5 +30,18 @@ public class AuthController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    // for login request
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @Valid
+            @RequestBody
+            LoginRequest request) {
+
+        LoginResponse response =
+                authService.login(request);
+
+        return ResponseEntity.ok(response);
     }
 }
