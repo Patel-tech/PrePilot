@@ -5,6 +5,7 @@ import com.preppilot.authentication.dto.RegisterResponse;
 import com.preppilot.authentication.entity.Role;
 import com.preppilot.authentication.entity.User;
 import com.preppilot.authentication.mapper.AuthMapper;
+import com.preppilot.authentication.mapper.UserMapper;
 import com.preppilot.authentication.repository.RoleRepository;
 import com.preppilot.authentication.repository.UserRepository;
 import com.preppilot.authentication.service.AuthService;
@@ -19,52 +20,61 @@ import java.util.HashSet;
 @Service
 @Transactional
 public class AuthServiceImpl implements AuthService {
+    private static final String DEFAULT_ROLE = "ROLE_USER";
 
     private final UserRepository userRepository;
-
     private final RoleRepository roleRepository;
-
+    private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
-    public AuthServiceImpl(UserRepository userRepository,
-                           RoleRepository roleRepository,
-                           PasswordEncoder passwordEncoder){
+    public AuthServiceImpl(
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            UserMapper userMapper,
+            PasswordEncoder passwordEncoder) {
 
-        this.userRepository=userRepository;
-        this.roleRepository=roleRepository;
-        this.passwordEncoder=passwordEncoder;
-
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.userMapper = userMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
-    public RegisterResponse register(RegisterRequest request){
+    public RegisterResponse register(RegisterRequest request) {
 
-        if(userRepository.existsByEmail(request.getEmail())){
-
-            throw new ResourceAlreadyExistsException(
-                    "Email already registered.");
-
+        // 1. Check whether email already exists
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw  new ResourceAlreadyExistsException("User already exists with email: "
+                    + request.getEmail());
         }
 
-        Role role=roleRepository.findByName("ROLE_USER")
-                .orElseThrow(()->
-                        new ResourceNotFoundException(
-                                "Default role not found"));
+        // 2. Convert DTO to Entity
+        User user = userMapper.toEntity(request);
 
-        User user = new User(
-                request.getFirstName(),
-                request.getLastName(),
-                request.getEmail(),
-                passwordEncoder.encode(request.getPassword()),
-                true
-        );
+        // 3. Encode password
+        String encodedPassword =
+                passwordEncoder.encode(request.getPassword());
 
-        user.getRoles().add(role);
+        user.setPassword(encodedPassword);
 
-        User savedUser=userRepository.save(user);
+        // 4. Find default role
+        Role userRole = roleRepository
+                .findByName(DEFAULT_ROLE)
+                .orElseThrow(() ->
+                        new IllegalStateException(
+                                "Default role not configured: "
+                                        + DEFAULT_ROLE
+                        )
+                );
 
-        return AuthMapper.toRegisterResponse(savedUser);
+        // 5. Assign role
+        user.addRole(userRole);
 
+        // 6. Save user
+        User savedUser = userRepository.save(user);
+
+        // 7. Convert Entity to Response DTO
+        return userMapper.toRegisterResponse(savedUser);
     }
 
 }
