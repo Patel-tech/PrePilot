@@ -1,9 +1,6 @@
 package com.preppilot.authentication.controller;
 
-import com.preppilot.authentication.dto.LoginRequest;
-import com.preppilot.authentication.dto.LoginResponse;
-import com.preppilot.authentication.dto.RegisterRequest;
-import com.preppilot.authentication.dto.RegisterResponse;
+import com.preppilot.authentication.dto.*;
 import com.preppilot.authentication.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -43,5 +40,21 @@ public class AuthController {
                 authService.login(request);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponse> refresh(
+            @RequestBody RefreshTokenRequest request) {
+
+        return ResponseEntity.ok(
+                authService.refreshToken(request.getRefreshToken())
+        );
+    }
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(
+            @RequestBody RefreshTokenRequest request) {
+
+        authService.logout(request.getRefreshToken());
     }
 }
