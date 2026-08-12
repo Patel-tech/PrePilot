@@ -44,7 +44,7 @@ logging:
 
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: preppilot-secret-key-preppilot-secret-key-123456
   issuer: PrepPilot
   access-token-expiration: 900000
   refresh-token-expiration: 604800000

@@ -2,7 +2,8 @@ package com.preppilot.authentication.config;
 
 import com.preppilot.authentication.exception.JwtAccessDeniedHandler;
 import com.preppilot.authentication.exception.JwtAuthenticationEntryPoint;
-import com.preppilot.authentication.filter.JwtAuthenticationFilter;
+//import com.preppilot.authentication.filter.JwtAuthenticationFilter1;
+import com.preppilot.authentication.jwt.JwtAuthenticationFilter;
 import com.preppilot.authentication.security.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
