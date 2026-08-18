@@ -5,11 +5,8 @@ import com.preppilot.authentication.entity.User;
 import com.preppilot.authentication.repository.UserRepository;
 import com.preppilot.common.exception.ResourceNotFoundException;
 
-import com.preppilot.interview.dto.InterviewQuestionRequest;
-import com.preppilot.interview.dto.InterviewRequest;
-
-import com.preppilot.interview.dto.InterviewQuestionResponse;
-import com.preppilot.interview.dto.InterviewResponse;
+import com.preppilot.interview.ai.QuestionGenerationService;
+import com.preppilot.interview.dto.*;
 
 import com.preppilot.interview.entity.Interview;
 import com.preppilot.interview.entity.InterviewQuestion;
@@ -44,6 +41,7 @@ public class InterviewServiceImpl
     private final UserRepository userRepository;
 
     private final InterviewMapper interviewMapper;
+    private final QuestionGenerationService questionGenerationService;
 
     public InterviewServiceImpl(
             InterviewRepository interviewRepository,
@@ -51,7 +49,8 @@ public class InterviewServiceImpl
                     interviewQuestionRepository,
             QuestionRepository questionRepository,
             UserRepository userRepository,
-            InterviewMapper interviewMapper) {
+            InterviewMapper interviewMapper,
+            QuestionGenerationService questionGenerationService) {
 
         this.interviewRepository = interviewRepository;
 
@@ -62,6 +61,7 @@ public class InterviewServiceImpl
         this.userRepository = userRepository;
 
         this.interviewMapper = interviewMapper;
+        this.questionGenerationService = questionGenerationService;
     }
 
     @Override
@@ -308,5 +308,32 @@ public class InterviewServiceImpl
                                 "Interview not found"
                         )
                 );
+    }
+
+    @Override
+    public List<AiGeneratedQuestion>
+    generateQuestions(Long interviewId, GenerateQuestionsRequest request) {
+
+        Interview interview = getInterviewForCurrentUser(interviewId);
+
+        if (interview.getStatus() != InterviewStatus.CREATED) {
+
+            throw new IllegalStateException(
+                    "Questions can only be generated "
+                            + "for CREATED interviews"
+            );
+        }
+
+        AiQuestionRequest aiRequest = new AiQuestionRequest();
+
+        aiRequest.setTopic(request.getTopic());
+
+        aiRequest.setDifficulty(interview.getDifficulty().name());
+
+        aiRequest.setInterviewType(interview.getType().name());
+
+        aiRequest.setNumberOfQuestions(request.getNumberOfQuestions());
+
+        return questionGenerationService.generateQuestions(aiRequest);
     }
 }

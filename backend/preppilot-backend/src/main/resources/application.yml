@@ -2,8 +2,7 @@ spring:
   application:
     name: preppilot-backend
   profiles:
-    active:
-      - dev
+    active: mock-ai
 
 #  jwt:
 #  secret: mySecretKey
