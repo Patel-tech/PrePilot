@@ -1,9 +1,6 @@
 package com.preppilot.interview.service;
 
-import com.preppilot.interview.dto.InterviewQuestionRequest;
-import com.preppilot.interview.dto.InterviewRequest;
-import com.preppilot.interview.dto.InterviewQuestionResponse;
-import com.preppilot.interview.dto.InterviewResponse;
+import com.preppilot.interview.dto.*;
 
 import java.util.List;
 
@@ -26,4 +23,6 @@ public interface InterviewService {
     InterviewResponse startInterview(Long id);
 
     InterviewResponse completeInterview(Long id);
+
+    List<AiGeneratedQuestion> generateQuestions(Long interviewId, GenerateQuestionsRequest request);
 }

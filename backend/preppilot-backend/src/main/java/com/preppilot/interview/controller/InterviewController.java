@@ -1,10 +1,6 @@
 package com.preppilot.interview.controller;
 
-import com.preppilot.interview.dto.InterviewQuestionRequest;
-import com.preppilot.interview.dto.InterviewRequest;
-
-import com.preppilot.interview.dto.InterviewQuestionResponse;
-import com.preppilot.interview.dto.InterviewResponse;
+import com.preppilot.interview.dto.*;
 
 import com.preppilot.interview.service.InterviewService;
 
@@ -123,6 +119,18 @@ public class InterviewController {
         return ResponseEntity.ok(
                 interviewService
                         .completeInterview(id)
+        );
+    }
+
+    @PostMapping("/{id}/generate-questions")
+    public ResponseEntity<List<AiGeneratedQuestion>>
+    generateQuestions(@PathVariable Long id, @Valid @RequestBody GenerateQuestionsRequest request) {
+
+        return ResponseEntity.ok(
+                interviewService
+                        .generateQuestions(
+                                id,
+                                request)
         );
     }
 }

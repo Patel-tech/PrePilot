@@ -2,8 +2,7 @@ spring:
   application:
     name: preppilot-backend
   profiles:
-    active:
-      - dev
+    active: ollama
 
 #  jwt:
 #  secret: mySecretKey
