@@ -1,9 +1,11 @@
 package com.preppilot.interview.provider;
 
+import com.preppilot.interview.ai.Exception.AiGenerationException;
 import com.preppilot.interview.ai.QuestionGenerator;
 import com.preppilot.interview.dto.AiGeneratedQuestion;
 import com.preppilot.interview.dto.AiQuestionRequest;
-import com.preppilot.interview.ai.Exception.AiGenerationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.ParameterizedTypeReference;
@@ -13,117 +15,201 @@ import java.util.List;
 
 @Component
 @Profile("ollama")
-public class OllamaQuestionGenerator implements QuestionGenerator {
+public class OllamaQuestionGenerator
+        implements QuestionGenerator {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(
+                    OllamaQuestionGenerator.class
+            );
 
     private final ChatClient chatClient;
 
-    public OllamaQuestionGenerator(ChatClient.Builder chatClientBuilder) {
-        this.chatClient = chatClientBuilder.build();
+    public OllamaQuestionGenerator(
+            ChatClient.Builder chatClientBuilder) {
+
+        this.chatClient =
+                chatClientBuilder.build();
     }
 
     @Override
     public List<AiGeneratedQuestion> generateQuestions(
             AiQuestionRequest request) {
 
+        log.info("Starting Ollama question generation...");
+        log.info("Topic: {}", request.getTopic());
+        log.info(
+                "Number of questions: {}",
+                request.getNumberOfQuestions()
+        );
+
+        String prompt = """
+                You are a senior Java developer and technical interviewer.
+
+                Generate exactly %d Java interview questions.
+
+                TOPIC:
+                %s
+
+                DIFFICULTY:
+                %s
+
+                INTERVIEW TYPE:
+                %s
+
+
+                IMPORTANT FIELD DEFINITIONS:
+
+                Each generated object MUST contain exactly these fields:
+
+                1. "question"
+                   - This MUST contain the actual interview question.
+                   - It must be a question that can be asked to a candidate.
+                   - NEVER put the topic name in this field.
+
+                2. "answer"
+                   - This MUST contain the complete correct answer
+                     to the "question" field.
+                   - NEVER put the question itself in this field.
+                   - NEVER put only a short keyword such as "HashMap".
+
+                3. "explanation"
+                   - This MUST contain an additional clear technical
+                     explanation of the answer.
+                   - It should help an interviewer understand why
+                     the answer is correct.
+
+                4. "tags"
+                   - This MUST contain relevant topic/concept tags.
+                   - Examples:
+                     ["Java Collections", "Set", "List"]
+                     ["HashMap", "Hashing", "Java Collections"]
+                   - DO NOT put difficulty in tags.
+                   - DO NOT put interview type in tags.
+                   - DO NOT put "MEDIUM", "EASY", "HARD",
+                     "TECHNICAL", or "HR" in tags.
+
+
+                STRICT RULES:
+
+                - Generate exactly %d questions.
+                - Every question must be about "%s".
+                - Every question must match the requested difficulty.
+                - Every question must match the requested interview type.
+                - Every answer must answer its corresponding question.
+                - Never swap question and answer.
+                - Never use the topic as the question.
+                - Never use the question as the answer.
+                - Do not invent Java classes, interfaces, methods,
+                  APIs, or frameworks.
+                - Do not generate duplicate questions.
+                - Use technically accurate Java terminology.
+
+
+                OUTPUT FORMAT:
+
+                Return ONLY a JSON array.
+
+                The JSON must have exactly this structure:
+
+                [
+                  {
+                    "question": "actual interview question",
+                    "answer": "complete answer to the question",
+                    "explanation": "technical explanation of the answer",
+                    "tags": [
+                      "relevant topic",
+                      "relevant concept"
+                    ]
+                  }
+                ]
+
+
+                EXAMPLE:
+
+                [
+                  {
+                    "question": "What is the difference between a List and a Set in Java?",
+                    "answer": "A List is an ordered collection that allows duplicate elements and provides positional access using an index. A Set is a collection that does not allow duplicate elements. Common List implementations include ArrayList and LinkedList, while common Set implementations include HashSet, LinkedHashSet, and TreeSet.",
+                    "explanation": "The main difference is how duplicates and ordering are handled. Lists maintain element positions and can contain duplicates, while Sets enforce uniqueness. The exact ordering behavior depends on the implementation.",
+                    "tags": [
+                      "Java Collections",
+                      "List",
+                      "Set"
+                    ]
+                  }
+                ]
+
+                Now generate the requested questions.
+                """.formatted(
+                request.getNumberOfQuestions(),
+                request.getTopic(),
+                request.getDifficulty(),
+                request.getInterviewType(),
+                request.getNumberOfQuestions(),
+                request.getTopic()
+        );
+
+        log.info("Prompt created. Calling Ollama...");
+
+        long startTime =
+                System.currentTimeMillis();
+
         try {
 
-            return chatClient
-                    .prompt()
+            List<AiGeneratedQuestion> questions =
+                    chatClient
+                            .prompt()
+                            .user(prompt)
+                            .call()
+                            .entity(
+                                    new ParameterizedTypeReference<
+                                            List<AiGeneratedQuestion>>() {
+                                    }
+                            );
 
-                    .system("""
-        You are a senior Java developer and expert technical interviewer.
 
-        Your job is to generate high-quality Java interview questions
-        for developers with professional experience.
+            if (questions == null || questions.isEmpty()) {
 
-        STRICT RULES:
+                log.error("Ollama returned no questions");
 
-        1. Every question must be directly related to the requested topic.
+                throw new AiGenerationException(
+                        "Ollama returned no interview questions"
+                );
+            }
+            if (questions.size() != request.getNumberOfQuestions()) {
 
-        2. Every answer must directly answer the question.
+                log.warn(
+                        "Ollama returned {} questions, expected {}",
+                        questions.size(),
+                        request.getNumberOfQuestions()
+                );
+            }
 
-        3. NEVER use the question title as the answer.
+            long duration =
+                    System.currentTimeMillis()
+                            - startTime;
 
-        4. NEVER return answers such as:
-           - "Iterator vs Enumeration"
-           - "ConcurrentHashMap"
-           - "HashMap"
-           - "How to implement..."
-           - "true"
-           - "false"
-           - "yes"
-           - "no"
+            log.info(
+                    "Ollama response received in {} ms",
+                    duration
+            );
 
-           unless the question explicitly requires a single-word answer.
+            log.info(
+                    "Generated {} questions",
+                    questions != null
+                            ? questions.size()
+                            : 0
+            );
 
-        5. For conceptual questions, provide a complete technical answer.
-
-        6. For comparison questions, explain BOTH sides and clearly
-           identify the differences.
-
-        7. For implementation questions, explain the implementation
-           approach and include important Java APIs or code concepts.
-
-        8. Answers should normally contain multiple sentences.
-
-        9. Explanations must provide additional educational value.
-           Do not simply repeat the answer.
-
-        10. Do not invent Java classes, interfaces, APIs, or frameworks.
-
-        11. Only use standard Java APIs unless the question explicitly
-            asks about a third-party library.
-
-        12. Avoid duplicate or nearly duplicate questions.
-
-        13. Match the requested difficulty.
-
-        14. Match the requested interview type.
-
-        15. Generate exactly the requested number of questions.
-
-        16. Tags must be technically relevant.
-
-        17. Return only the requested structured output.
-        """).user("""
-        Generate exactly %d Java interview questions.
-
-        Topic: %s
-
-        Difficulty: %s
-
-        Interview Type: %s
-
-        Quality requirements:
-
-        - Questions must be suitable for a real technical interview.
-        - Answers must demonstrate actual technical understanding.
-        - Each answer should normally contain at least 2-4 sentences.
-        - Comparison questions must explain the differences explicitly.
-        - "How" questions must explain the approach.
-        - Implementation questions must explain the important steps.
-        - Avoid trivial definition-only questions.
-        - Avoid invented Java APIs.
-        - Include practical examples when appropriate.
-        - Explanations should teach the candidate something beyond
-          simply repeating the answer.
-        """.formatted(
-                   request.getNumberOfQuestions(),
-                            request.getTopic(),
-                            request.getDifficulty(),
-                            request.getInterviewType()
-                            ))
-
-                    .call()
-
-                    .entity(
-                            new ParameterizedTypeReference<
-                                    List<AiGeneratedQuestion>>() {
-                            }
-                    );
+            return questions;
 
         } catch (Exception ex) {
-            ex.printStackTrace();
+
+            log.error(
+                    "Ollama question generation failed",
+                    ex
+            );
 
             throw new AiGenerationException(
                     "Failed to generate interview questions using Ollama: "

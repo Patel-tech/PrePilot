@@ -1,37 +1,53 @@
 package com.preppilot.interview.ai;
+
 import com.preppilot.interview.dto.AiGeneratedQuestion;
 import com.preppilot.interview.dto.AiQuestionRequest;
-
-import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class QuestionGenerationServiceImpl
         implements QuestionGenerationService {
 
+    private static final Logger log =
+            LoggerFactory.getLogger(
+                    QuestionGenerationServiceImpl.class
+            );
+
     private final QuestionGenerator questionGenerator;
-    private final AiQuestionValidator aiQuestionValidator;
+
+    public QuestionGenerationServiceImpl(
+            QuestionGenerator questionGenerator) {
+
+        this.questionGenerator = questionGenerator;
+    }
 
     @Override
-    public List<AiGeneratedQuestion> generateQuestions(AiQuestionRequest request) {
+    public List<AiGeneratedQuestion> generateQuestions(
+            AiQuestionRequest request) {
 
-        // 1. Validate request
+        log.info("Starting question generation service");
+
         validateRequest(request);
 
-        // 2. Call AI provider
-        List<AiGeneratedQuestion> questions = questionGenerator.generateQuestions(request);
+        log.info("Request validation completed");
 
-        // 3. Validate AI output
-        aiQuestionValidator.validate(request, questions);
+        List<AiGeneratedQuestion> questions =
+                questionGenerator.generateQuestions(request);
 
-        // 4. Return generated questions
+        log.info(
+                "AI provider returned {} questions",
+                questions.size()
+        );
+
         return questions;
     }
 
-    private void validateRequest(AiQuestionRequest request) {
+    private void validateRequest(
+            AiQuestionRequest request) {
 
         if (request == null) {
             throw new IllegalArgumentException(
@@ -39,14 +55,16 @@ public class QuestionGenerationServiceImpl
             );
         }
 
-        if (request.getTopic() == null || request.getTopic().isBlank()) {
+        if (request.getTopic() == null
+                || request.getTopic().isBlank()) {
 
             throw new IllegalArgumentException(
                     "Topic is required"
             );
         }
 
-        if (request.getNumberOfQuestions() <= 0 || request.getNumberOfQuestions() > 20) {
+        if (request.getNumberOfQuestions() < 1
+                || request.getNumberOfQuestions() > 20) {
 
             throw new IllegalArgumentException(
                     "Number of questions must be between 1 and 20"
