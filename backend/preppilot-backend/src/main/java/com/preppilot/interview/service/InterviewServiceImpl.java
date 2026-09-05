@@ -8,13 +8,11 @@ import com.preppilot.common.exception.ResourceNotFoundException;
 import com.preppilot.interview.ai.QuestionGenerationService;
 import com.preppilot.interview.dto.*;
 
-import com.preppilot.interview.entity.Interview;
-import com.preppilot.interview.entity.InterviewQuestion;
-import com.preppilot.interview.entity.InterviewStatus;
-import com.preppilot.interview.entity.Question;
+import com.preppilot.interview.entity.*;
 
 import com.preppilot.interview.mapper.InterviewMapper;
 
+import com.preppilot.interview.repository.CategoryRepository;
 import com.preppilot.interview.repository.InterviewQuestionRepository;
 import com.preppilot.interview.repository.InterviewRepository;
 import com.preppilot.interview.repository.QuestionRepository;
@@ -25,7 +23,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -33,6 +33,8 @@ public class InterviewServiceImpl
         implements InterviewService {
 
     private final InterviewRepository interviewRepository;
+
+    private final CategoryRepository categoryRepository;
 
     private final InterviewQuestionRepository interviewQuestionRepository;
 
@@ -50,7 +52,8 @@ public class InterviewServiceImpl
             QuestionRepository questionRepository,
             UserRepository userRepository,
             InterviewMapper interviewMapper,
-            QuestionGenerationService questionGenerationService) {
+            QuestionGenerationService questionGenerationService,
+            CategoryRepository categoryRepository) {
 
         this.interviewRepository = interviewRepository;
 
@@ -62,6 +65,7 @@ public class InterviewServiceImpl
 
         this.interviewMapper = interviewMapper;
         this.questionGenerationService = questionGenerationService;
+        this.categoryRepository = categoryRepository;
     }
 
     @Override
@@ -309,31 +313,228 @@ public class InterviewServiceImpl
                         )
                 );
     }
-
     @Override
     public List<AiGeneratedQuestion>
-    generateQuestions(Long interviewId, GenerateQuestionsRequest request) {
+    generateQuestions(
+            Long interviewId,
+            GenerateQuestionsRequest request) {
 
-        Interview interview = getInterviewForCurrentUser(interviewId);
+        Interview interview =
+                getInterviewForCurrentUser(interviewId);
 
         if (interview.getStatus() != InterviewStatus.CREATED) {
-
             throw new IllegalStateException(
                     "Questions can only be generated "
                             + "for CREATED interviews"
             );
         }
 
-        AiQuestionRequest aiRequest = new AiQuestionRequest();
+        AiQuestionRequest aiRequest =
+                new AiQuestionRequest();
 
         aiRequest.setTopic(request.getTopic());
+        aiRequest.setDifficulty(
+                interview.getDifficulty().name()
+        );
+        aiRequest.setInterviewType(
+                interview.getType().name()
+        );
+        aiRequest.setNumberOfQuestions(
+                request.getNumberOfQuestions()
+        );
 
-        aiRequest.setDifficulty(interview.getDifficulty().name());
+        List<AiGeneratedQuestion> generatedQuestions =
+                questionGenerationService
+                        .generateQuestions(aiRequest);
 
-        aiRequest.setInterviewType(interview.getType().name());
+        validateGeneratedQuestions(
+                generatedQuestions
+        );
 
-        aiRequest.setNumberOfQuestions(request.getNumberOfQuestions());
+        validateDuplicateQuestions(
+                generatedQuestions
+        );
 
-        return questionGenerationService.generateQuestions(aiRequest);
+        saveGeneratedQuestions(
+                interview,
+                request.getTopic(),
+                generatedQuestions
+        );
+
+        return generatedQuestions;
+    }private void validateGeneratedQuestions(
+            List<AiGeneratedQuestion> questions) {
+
+        if (questions == null || questions.isEmpty()) {
+            throw new IllegalStateException(
+                    "AI did not generate any questions"
+            );
+        }
+
+        for (AiGeneratedQuestion question : questions) {
+
+            if (question == null) {
+                throw new IllegalStateException(
+                        "AI generated an invalid question"
+                );
+            }
+
+            if (question.getQuestion() == null
+                    || question.getQuestion().isBlank()) {
+
+                throw new IllegalStateException(
+                        "AI generated question text is empty"
+                );
+            }
+
+            if (question.getAnswer() == null
+                    || question.getAnswer().isBlank()) {
+
+                throw new IllegalStateException(
+                        "AI generated question answer is empty"
+                );
+            }
+        }
     }
+
+
+    private void validateDuplicateQuestions(
+            List<AiGeneratedQuestion> questions) {
+
+        Set<String> questionTexts =
+                new HashSet<>();
+
+        for (AiGeneratedQuestion question : questions) {
+
+            String normalized =
+                    question.getQuestion()
+                            .trim()
+                            .toLowerCase();
+
+            if (!questionTexts.add(normalized)) {
+
+                throw new IllegalStateException(
+                        "AI generated duplicate questions"
+                );
+            }
+        }
+    }
+
+    private void saveGeneratedQuestions(
+            Interview interview,
+            String topic,
+            List<AiGeneratedQuestion> generatedQuestions) {
+
+        Category category =
+                resolveCategory(topic);
+
+        List<InterviewQuestion> existingQuestions =
+                interviewQuestionRepository
+                        .findByInterviewIdOrderByQuestionOrderAsc(
+                                interview.getId()
+                        );
+
+        int startingOrder =
+                existingQuestions.size() + 1;
+
+        for (int i = 0;
+             i < generatedQuestions.size();
+             i++) {
+
+            AiGeneratedQuestion generatedQuestion =
+                    generatedQuestions.get(i);
+
+            Question question =
+                    new Question();
+
+            question.setQuestionText(
+                    generatedQuestion.getQuestion()
+            );
+
+            question.setExpectedAnswer(
+                    generatedQuestion.getAnswer()
+            );
+
+            question.setDifficulty(
+                    interview.getDifficulty()
+            );
+
+            /*
+             * Store the actual requested topic.
+             *
+             * Example:
+             * Java Exception Handling
+             * Java Collections
+             * Java Multithreading
+             */
+            question.setTechnology(
+                    topic.trim()
+            );
+
+            /*
+             * Associate the question with the
+             * parent category.
+             *
+             * Example:
+             * Java Exception Handling -> Java
+             */
+            question.setCategory(category);
+
+            Question savedQuestion =
+                    questionRepository.save(question);
+
+            InterviewQuestion interviewQuestion =
+                    new InterviewQuestion();
+
+            interviewQuestion.setInterview(
+                    interview
+            );
+
+            interviewQuestion.setQuestion(
+                    savedQuestion
+            );
+
+            interviewQuestion.setQuestionOrder(
+                    startingOrder + i
+            );
+
+            interviewQuestionRepository.save(
+                    interviewQuestion
+            );
+        }
+    }
+
+    private Category resolveCategory(String topic) {
+
+        String normalizedTopic =
+                topic.trim().toLowerCase();
+
+        if (normalizedTopic.startsWith("java")) {
+
+            return categoryRepository
+                    .findByName("Java")
+                    .orElseThrow(() ->
+                            new IllegalStateException(
+                                    "Java category not found"
+                            )
+                    );
+        }
+
+        if (normalizedTopic.startsWith("spring boot")) {
+
+            return categoryRepository
+                    .findByName("Spring Boot")
+                    .orElseThrow(() ->
+                            new IllegalStateException(
+                                    "Spring Boot category not found"
+                            )
+                    );
+        }
+
+        throw new IllegalStateException(
+                "No category mapping found for topic: "
+                        + topic
+        );
+    }
+
 }
