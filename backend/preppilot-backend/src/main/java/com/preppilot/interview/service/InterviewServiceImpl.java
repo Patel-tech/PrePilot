@@ -371,6 +371,92 @@ public class InterviewServiceImpl
                 generatedQuestions
         );
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InterviewQuestionDetailResponse>
+    getInterviewQuestions(Long interviewId) {
+
+        Interview interview =
+                getInterviewForCurrentUser(interviewId);
+
+        List<InterviewQuestion> interviewQuestions =
+                interviewQuestionRepository
+                        .findByInterviewIdOrderByQuestionOrderAsc(
+                                interview.getId()
+                        );
+
+        return interviewQuestions
+                .stream()
+                .map(this::toInterviewQuestionDetailResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CandidateQuestionResponse>
+    getCandidateQuestions(Long interviewId) {
+
+        Interview interview =
+                getInterviewForCurrentUser(interviewId);
+
+        if (interview.getStatus() == InterviewStatus.COMPLETED) {
+            throw new IllegalStateException(
+                    "Cannot access candidate questions for a completed interview"
+            );
+        }
+
+        List<InterviewQuestion> interviewQuestions =
+                interviewQuestionRepository
+                        .findByInterviewIdOrderByQuestionOrderAsc(
+                                interview.getId()
+                        );
+
+        return interviewQuestions
+                .stream()
+                .map(this::toCandidateQuestionResponse)
+                .toList();
+    }
+
+    private CandidateQuestionResponse
+    toCandidateQuestionResponse(
+            InterviewQuestion interviewQuestion) {
+
+        Question question =
+                interviewQuestion.getQuestion();
+
+        return new CandidateQuestionResponse(
+                interviewQuestion.getId(),
+                question.getId(),
+                interviewQuestion.getQuestionOrder(),
+                question.getQuestionText(),
+                question.getDifficulty() != null
+                        ? question.getDifficulty().name()
+                        : null,
+                question.getTechnology()
+        );
+    }
+
+    private InterviewQuestionDetailResponse
+    toInterviewQuestionDetailResponse(
+            InterviewQuestion interviewQuestion) {
+
+        Question question =
+                interviewQuestion.getQuestion();
+
+        return new InterviewQuestionDetailResponse(
+                interviewQuestion.getId(),
+                question.getId(),
+                interviewQuestion.getQuestionOrder(),
+                question.getQuestionText(),
+                question.getExpectedAnswer(),
+                question.getDifficulty() != null
+                        ? question.getDifficulty().name()
+                        : null,
+                question.getTechnology()
+        );
+    }
+
     private void validateGeneratedQuestions(
             List<AiGeneratedQuestion> questions) {
 

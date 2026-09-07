@@ -135,4 +135,24 @@ public class InterviewController {
         );
     }
 
+    @GetMapping("/{id}/questions")
+    public ResponseEntity<List<InterviewQuestionDetailResponse>>
+    getInterviewQuestions(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                interviewService.getInterviewQuestions(id)
+        );
+    }
+
+    @GetMapping("/{id}/questions/candidate")
+    public ResponseEntity<List<CandidateQuestionResponse>>
+    getCandidateQuestions(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                interviewService.getCandidateQuestions(id)
+        );
+    }
+
 }
