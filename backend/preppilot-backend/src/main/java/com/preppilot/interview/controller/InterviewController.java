@@ -121,10 +121,11 @@ public class InterviewController {
                         .completeInterview(id)
         );
     }
-
     @PostMapping("/{id}/generate-questions")
-    public ResponseEntity<List<AiGeneratedQuestion>>
-    generateQuestions(@PathVariable Long id, @Valid @RequestBody GenerateQuestionsRequest request) {
+    public ResponseEntity<List<GeneratedQuestionResponse>>
+    generateQuestions(
+            @PathVariable Long id,
+            @Valid @RequestBody GenerateQuestionsRequest request) {
 
         return ResponseEntity.ok(
                 interviewService
@@ -133,4 +134,5 @@ public class InterviewController {
                                 request)
         );
     }
+
 }

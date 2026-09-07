@@ -23,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -314,7 +315,7 @@ public class InterviewServiceImpl
                 );
     }
     @Override
-    public List<AiGeneratedQuestion>
+    public List<GeneratedQuestionResponse>
     generateQuestions(
             Long interviewId,
             GenerateQuestionsRequest request) {
@@ -332,13 +333,18 @@ public class InterviewServiceImpl
         AiQuestionRequest aiRequest =
                 new AiQuestionRequest();
 
-        aiRequest.setTopic(request.getTopic());
+        aiRequest.setTopic(
+                request.getTopic()
+        );
+
         aiRequest.setDifficulty(
                 interview.getDifficulty().name()
         );
+
         aiRequest.setInterviewType(
                 interview.getType().name()
         );
+
         aiRequest.setNumberOfQuestions(
                 request.getNumberOfQuestions()
         );
@@ -355,14 +361,17 @@ public class InterviewServiceImpl
                 generatedQuestions
         );
 
-        saveGeneratedQuestions(
+        validateExistingQuestions(
+                generatedQuestions
+        );
+
+        return saveGeneratedQuestions(
                 interview,
                 request.getTopic(),
                 generatedQuestions
         );
-
-        return generatedQuestions;
-    }private void validateGeneratedQuestions(
+    }
+    private void validateGeneratedQuestions(
             List<AiGeneratedQuestion> questions) {
 
         if (questions == null || questions.isEmpty()) {
@@ -420,7 +429,7 @@ public class InterviewServiceImpl
         }
     }
 
-    private void saveGeneratedQuestions(
+    private  List<GeneratedQuestionResponse> saveGeneratedQuestions(
             Interview interview,
             String topic,
             List<AiGeneratedQuestion> generatedQuestions) {
@@ -437,6 +446,8 @@ public class InterviewServiceImpl
         int startingOrder =
                 existingQuestions.size() + 1;
 
+        List<GeneratedQuestionResponse> responses =
+                new ArrayList<>();
         for (int i = 0;
              i < generatedQuestions.size();
              i++) {
@@ -497,11 +508,24 @@ public class InterviewServiceImpl
             interviewQuestion.setQuestionOrder(
                     startingOrder + i
             );
-
-            interviewQuestionRepository.save(
-                    interviewQuestion
+            InterviewQuestion savedInterviewQuestion =
+                    interviewQuestionRepository.save(
+                            interviewQuestion
+                    );
+            responses.add(
+                    new GeneratedQuestionResponse(
+                            savedQuestion.getId(),
+                            savedInterviewQuestion.getId(),
+                            savedInterviewQuestion.getQuestionOrder(),
+                            generatedQuestion.getQuestion(),
+                            generatedQuestion.getAnswer(),
+                            generatedQuestion.getExplanation(),
+                            generatedQuestion.getTags()
+                    )
             );
+
         }
+        return responses;
     }
 
     private Category resolveCategory(String topic) {
@@ -535,6 +559,26 @@ public class InterviewServiceImpl
                 "No category mapping found for topic: "
                         + topic
         );
+    }
+
+    private void validateExistingQuestions(
+            List<AiGeneratedQuestion> questions) {
+
+        for (AiGeneratedQuestion question : questions) {
+
+            boolean exists =
+                    questionRepository
+                            .existsByQuestionTextIgnoreCase(
+                                    question.getQuestion().trim()
+                            );
+
+            if (exists) {
+                throw new IllegalStateException(
+                        "Question already exists: "
+                                + question.getQuestion()
+                );
+            }
+        }
     }
 
 }

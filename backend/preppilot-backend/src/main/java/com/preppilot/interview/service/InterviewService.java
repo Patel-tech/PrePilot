@@ -24,5 +24,5 @@ public interface InterviewService {
 
     InterviewResponse completeInterview(Long id);
 
-    List<AiGeneratedQuestion> generateQuestions(Long interviewId, GenerateQuestionsRequest request);
+    List<GeneratedQuestionResponse> generateQuestions(Long interviewId, GenerateQuestionsRequest request);
 }
