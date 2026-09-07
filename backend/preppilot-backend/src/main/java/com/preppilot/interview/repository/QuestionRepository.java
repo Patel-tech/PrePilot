@@ -1,5 +1,4 @@
 package com.preppilot.interview.repository;
-
 import com.preppilot.interview.entity.Question;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -12,4 +11,7 @@ public interface QuestionRepository
 
     List<Question> findByTechnology(
             String technology);
+
+    boolean existsByQuestionTextIgnoreCase(
+            String questionText);
 }
